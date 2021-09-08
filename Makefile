@@ -27,5 +27,8 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
+server:
+	go run main.go
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server
 # 伪目标 PHONY 的作用：当 make xxx 时候，如果存在可以运行的 xxx 的命令，那 Makefile 中的 xxx 将不会被运行，加上 PHONY 就可以运行 Makefile 中的指令。
