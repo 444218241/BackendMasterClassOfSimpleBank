@@ -11,21 +11,29 @@ package api
 import (
 	db "techschool/samplebank/db/sqlc"
 
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	store  *db.Store   // type Store struct{*Queries; db *DB}
+	store  db.Store    // type Store interface
 	router *gin.Engine // struct
 }
 
 // NewServer creates a http server and setup routing
-func NewServer(store *db.Store) *Server {
+func NewServer(store db.Store) *Server {
 	server := &Server{
 		store:  store,
 		router: gin.Default(),
 	}
-	// func Default() *Engine {}
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("currency", validCurrency)
+	}
+
+	server.router.POST("/transfer", server.CreateTransfer)
+
 	server.router.POST("/account", server.createAccount)
 	server.router.GET("/account/:id", server.getAccount)
 	server.router.GET("/accounts", server.listAccounts)

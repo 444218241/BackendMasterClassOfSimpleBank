@@ -13,13 +13,17 @@ dropdb:
 migratecreate:
 	migrate create -ext sql -dir db/migration -seq init_schema
 	# 别忘记把 sql 文件内容拷贝到 db/migration/*.up.sql 里面为 migrateup 做数据准备
+	# migrate create -ext sql -dir db/migration -seq add_users
 
 migrateup:
 	migrate -path=db/migration -database=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable -verbose up
-	# migrate create -ext sql -dir db/migration -seq init_schema # 相同处理结果
+migrateup1:
+	migrate -path=db/migration -database=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable -verbose up 1
 
 migratedown:
 	migrate -path=db/migration -database=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable -verbose down
+migratedown1:
+	migrate -path=db/migration -database=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable -verbose down 1
 
 sqlc:
 	sqlc generate
@@ -30,5 +34,8 @@ test:
 server:
 	go run main.go
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server
+mock:
+	mockgen -package mockdb -destination  db/mock/store.go techschool/samplebank/db/sqlc Store
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1
 # 伪目标 PHONY 的作用：当 make xxx 时候，如果存在可以运行的 xxx 的命令，那 Makefile 中的 xxx 将不会被运行，加上 PHONY 就可以运行 Makefile 中的指令。

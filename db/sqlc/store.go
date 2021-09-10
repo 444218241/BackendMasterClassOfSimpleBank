@@ -14,21 +14,26 @@ import (
 	"fmt"
 )
 
-type Store struct {
-	*Queries         // type Queries struct { db DBTX }
+type Store interface {
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+}
+
+type SQLStore struct {
 	db       *sql.DB // 用来创建数据库事务
+	*Queries         // type Queries struct { db DBTX }
 }
 
 // NewStore  creates a new Store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		Queries: New(db), // func New(db DBTX) *Queries {}
 		db:      db,
 	}
 }
 
 // execTx executes a  function within a database transaction
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -63,7 +68,7 @@ type TransferTxResult struct {
 
 var txKey = struct{}{} // empty struct
 
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
+func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error

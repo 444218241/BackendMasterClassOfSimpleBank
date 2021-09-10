@@ -3,6 +3,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -29,4 +30,13 @@ type Transfer struct {
 	// must be or positive
 	Amount    int64     `json:"amount"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type User struct {
+	Username          string       `json:"username"`
+	FullName          string       `json:"full_name"`
+	Email             string       `json:"email"`
+	HashPassword      string       `json:"hash_password"`
+	PasswordChangedAt sql.NullTime `json:"password_changed_at"`
+	CreatedAt         time.Time    `json:"created_at"`
 }
