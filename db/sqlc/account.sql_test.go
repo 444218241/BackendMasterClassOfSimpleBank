@@ -1,11 +1,3 @@
-/*
-@time: 2021/9/6 11:10
-@author: chenZouLu
-@file: account.sql_test.go
-@software: GoLand
-@note:
-*/
-
 package db
 
 import (

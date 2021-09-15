@@ -11,13 +11,16 @@ import (
 	"reflect"
 	"testing"
 
+	"techschool/samplebank/util"
+
+	db "techschool/samplebank/db/sqlc"
+
+	mockdb "techschool/samplebank/db/mock"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
-	mockdb "github.com/techschool/simplebank/db/mock"
-	db "github.com/techschool/simplebank/db/sqlc"
-	"github.com/techschool/simplebank/util"
 )
 
 type eqCreateUserParamsMatcher struct {
@@ -31,12 +34,12 @@ func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	err := util.CheckPassword(e.password, arg.HashedPassword)
+	err := util.CheckPassword(e.password, arg.HashPassword)
 	if err != nil {
 		return false
 	}
 
-	e.arg.HashedPassword = arg.HashedPassword
+	e.arg.HashPassword = arg.HashPassword
 	return reflect.DeepEqual(e.arg, arg)
 }
 
@@ -318,14 +321,14 @@ func TestLoginUserAPI(t *testing.T) {
 
 func randomUser(t *testing.T) (user db.User, password string) {
 	password = util.RandomString(6)
-	hashedPassword, err := util.HashPassword(password)
+	hashPassword, err := util.HashPassword(password)
 	require.NoError(t, err)
 
 	user = db.User{
-		Username:       util.RandomOwner(),
-		HashedPassword: hashedPassword,
-		FullName:       util.RandomOwner(),
-		Email:          util.RandomEmail(),
+		Username:     util.RandomOwner(),
+		HashPassword: hashPassword,
+		FullName:     util.RandomOwner(),
+		Email:        util.RandomEmail(),
 	}
 	return
 }
@@ -341,5 +344,5 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	require.Equal(t, user.Username, gotUser.Username)
 	require.Equal(t, user.FullName, gotUser.FullName)
 	require.Equal(t, user.Email, gotUser.Email)
-	require.Empty(t, gotUser.HashedPassword)
+	require.Empty(t, gotUser.HashPassword)
 }

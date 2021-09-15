@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 	db "techschool/samplebank/db/sqlc"
 	"techschool/samplebank/util"
@@ -44,7 +45,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 	}
 
 	// save user data
-	hashedPassword, err := util.HashPassword(req.Password)
+	hashPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -53,7 +54,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		Username:     req.Username,
 		FullName:     req.FullName,
 		Email:        req.Email,
-		HashPassword: hashedPassword,
+		HashPassword: hashPassword,
 	}
 	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
@@ -69,5 +70,58 @@ func (server *Server) createUser(ctx *gin.Context) {
 	}
 
 	rsp := newUserResponse(user)
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+type loginUserRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type loginUserResponse struct {
+	AccessToken string       `json:"access_token"`
+	User        userResponse `json:"user"`
+}
+
+func (server *Server) loginUser(ctx *gin.Context) {
+	// check parameters
+	var req loginUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// get user data
+	user, err := server.store.GetUser(ctx, req.Username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// check password
+	err = util.CheckPassword(req.Password, user.HashPassword)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	// generate a new token
+	acceccToken, err := server.tokenMaker.CreateToken(
+		req.Username,
+		server.config.AccessTokenDuraion,
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := loginUserResponse{
+		AccessToken: acceccToken,
+		User:        newUserResponse(user),
+	}
 	ctx.JSON(http.StatusOK, rsp)
 }

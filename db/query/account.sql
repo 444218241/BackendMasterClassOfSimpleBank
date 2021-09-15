@@ -3,8 +3,7 @@ INSERT INTO accounts (
     owner,
     balance,
     currency
-)
-VALUES (
+) VALUES (
     $1, $2, $3
 ) RETURNING *;
 
